@@ -3,163 +3,273 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>InstaSound AI Dashboard</title>
-    <link rel="stylesheet" href="/static/style.css">
+    <title>{{ page_title }}</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        .upload-container {
+            max-width: 600px;
+            margin: 50px auto;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 0 10px rgba(0,0,0,0.1);
+        }
+        .mood-chips {
+            margin: 20px 0;
+        }
+        .mood-chip {
+            margin: 5px;
+            padding: 5px 15px;
+            border-radius: 20px;
+            display: inline-block;
+            background-color: #e9ecef;
+            cursor: pointer;
+        }
+        .mood-chip:hover {
+            background-color: #dee2e6;
+        }
+        .chat-container {
+            max-width: 600px;
+            margin: 20px auto;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 0 10px rgba(0,0,0,0.1);
+            background-color: white;
+        }
+        .chat-messages {
+            max-height: 300px;
+            overflow-y: auto;
+            margin-bottom: 20px;
+            padding: 10px;
+            border: 1px solid #dee2e6;
+            border-radius: 5px;
+        }
+        .message {
+            margin-bottom: 10px;
+            padding: 10px;
+            border-radius: 5px;
+        }
+        .user-message {
+            background-color: #007bff;
+            color: white;
+            margin-left: 20%;
+        }
+        .response-message {
+            background-color: #e9ecef;
+            margin-right: 20%;
+        }
+        .error-message {
+            color: #dc3545;
+            background-color: #f8d7da;
+            border: 1px solid #f5c6cb;
+            padding: 10px;
+            margin: 10px 0;
+            border-radius: 5px;
+        }
+        .loading {
+            opacity: 0.5;
+            pointer-events: none;
+        }
+    </style>
 </head>
 <body>
-    <div class="dashboard-container">
-        <h2>Welcome, {{ user }}! Explore InstaSound AI Features</h2>
-
-        <!-- Tab Navigation -->
-        <div class="tab">
-            <button class="tab-button" onclick="openTab(event, 'Music')">Music Recommendation</button>
-            <button class="tab-button" onclick="openTab(event, 'Crop')">AI Image Cropping</button>
-            <button class="tab-button" onclick="openTab(event, 'Caption')">Caption Generator</button>
-            <button class="tab-button" onclick="openTab(event, 'Preview')">Real-Time Preview</button>
+    <nav class="navbar navbar-expand-lg navbar-dark bg-dark">
+        <div class="container">
+            <a class="navbar-brand" href="/">Music Mood Recommender</a>
         </div>
+    </nav>
 
-        <!-- Tab Content -->
+    <div class="container">
+        <!-- Music Recommendation Form -->
+        <div class="upload-container bg-white">
+            <h2 class="text-center mb-4">Get Music Recommendations</h2>
+            
+            <form id="recommendForm" action="/recommend-music" method="post">
+                <div class="mb-3">
+                    <label for="moodDescription" class="form-label">Describe your mood</label>
+                    <textarea class="form-control" id="moodDescription" name="moodDescription" rows="3" required></textarea>
+                </div>
 
-        <!-- Music Recommendation -->
-        <div id="Music" class="tab-content">
-            <h3>Music Recommendation</h3>
-            <form id="musicForm" enctype="multipart/form-data">
-                <label for="musicImage">Upload an Image:</label>
-                <input type="file" id="musicImage" name="musicImage" accept="image/*" required>
-                <button type="button" onclick="recommendMusic()">Get Music</button>
+                <div class="mood-chips">
+                    <p class="text-muted">Common moods:</p>
+                    {% if mood_genres %}
+                        {% for mood in mood_genres.keys() %}
+                            <span class="mood-chip" onclick="appendMood('{{ mood }}')">{{ mood }}</span>
+                        {% endfor %}
+                    {% else %}
+                        <p class="text-danger">No mood genres available</p>
+                    {% endif %}
+                </div>
+
+                <button type="submit" class="btn btn-primary w-100">Get Recommendations</button>
             </form>
-            <p id="musicResult">Recommended song will appear here.</p>
-        </div>
 
-        <!-- AI Image Cropping -->
-        <div id="Crop" class="tab-content">
-            <h3>AI Image Cropping</h3>
-            <form id="cropForm" enctype="multipart/form-data">
-                <label for="image">Upload Image:</label>
-                <input type="file" id="image" name="image" accept="image/*" required>
-                <button type="button" onclick="cropImage()">Crop Image</button>
-            </form>
-            <img id="croppedImage" src="#" alt="Cropped Image Preview" style="display:none;">
-        </div>
-
-        <!-- Caption Generator -->
-        <div id="Caption" class="tab-content">
-            <h3>Caption Generator</h3>
-            <form id="captionForm">
-                <label for="captionPrompt">Enter Caption Prompt:</label>
-                <input type="text" id="captionPrompt" name="captionPrompt" required>
-                <button type="button" onclick="generateCaption()">Generate Caption</button>
-            </form>
-            <p id="captionResult">Generated caption will appear here.</p>
-        </div>
-
-        <!-- Real-Time Preview -->
-        <div id="Preview" class="tab-content">
-            <h3>Real-Time Preview</h3>
-            <p>Combine the generated music, cropped image, and caption to preview your story.</p>
-            <div id="storyPreview">
-                <audio id="previewMusic" controls style="display:none;"></audio>
-                <img id="previewImage" src="#" alt="Image Preview" style="display:none;">
-                <p id="previewCaption"></p>
+            <div id="recommendations" class="mt-4" style="display: none;">
+                <h3>Your Recommendations</h3>
+                <div id="recommendationsList" class="list-group">
+                    <!-- Recommendations will be inserted here -->
+                </div>
             </div>
-            <button onclick="showPreview()">Show Preview</button>
         </div>
 
-        <a href="/logout" class="logout-button">Logout</a>
-    </div>
-
-    <script>
-        async function recommendMusic() {
-            const formData = new FormData(document.getElementById('musicForm'));
-            try {
-                const response = await fetch('/recommend-music', {
-                    method: 'POST',
-                    body: formData,
+        <!-- Chat Section -->
+        <div class="chat-container">
+            <h3 class="text-center mb-4">Music Mood Chat</h3>
+            <div class="chat-messages" id="chatMessages">
+                {% if user_message %}
+                    <div class="message user-message">{{ user_message }}</div>
+                {% endif %}
+                {% if response %}
+                    <div class="message response-message">{{ response }}</div>
+                {% endif %}
+            </div>
+            <form id="chatForm" action="/chat" method="post" class="d-flex gap-2">
+                <input type="text" name="message" class="form-control" placeholder="Type a message..." required>
+                <button type="submit" class="btn btn-primary">Send</button>
+            </form>
+        </div>
+    
+        <script>
+            document.addEventListener('DOMContentLoaded', function() {
+                const recommendForm = document.getElementById('recommendForm');
+                const chatForm = document.getElementById('chatForm');
+                
+                // Function to append mood to the textarea
+                window.appendMood = function(mood) {
+                    const textarea = document.getElementById('moodDescription');
+                    const currentText = textarea.value;
+                    const separator = currentText.length > 0 ? ', ' : '';
+                    textarea.value = currentText + separator + mood;
+                };
+    
+                // Handle music recommendation form submission
+                recommendForm.addEventListener('submit', async function(e) {
+                    e.preventDefault();
+                    
+                    const formData = new FormData(this);
+                    console.log('Submitting mood:', formData.get('moodDescription'));
+                    
+                    try {
+                        const response = await fetch('/recommend-music', {
+                            method: 'POST',
+                            body: formData
+                        });
+                        
+                        console.log('Response status:', response.status);
+                        const data = await response.json();
+                        console.log('Response data:', data);
+                        
+                        if (response.ok) {
+                            displayRecommendations(data);
+                        } else {
+                            console.error('Error response:', data);
+                            alert(data.detail || 'Error getting recommendations');
+                        }
+                    } catch (error) {
+                        console.error('Fetch error:', error);
+                        alert('Error submitting form: ' + error.message);
+                    }
                 });
-
-                if (!response.ok) throw new Error('Failed to fetch music recommendation');
-
-                const data = await response.json();
-                document.getElementById('musicResult').innerHTML = `
-                    Recommended Song: ${data.song} 
-                    <br><img src="${data.image_url}" alt="Uploaded Image" style="max-width: 300px;"/>
-                `;
-            } catch (error) {
-                console.error('Error:', error);
-                document.getElementById('musicResult').innerText = `Error: ${error.message}`;
-            }
-        }
-
-        async function cropImage() {
-            const formData = new FormData(document.getElementById('cropForm'));
-            try {
-                // Here, you would implement the cropping logic with your backend endpoint
-                // const response = await fetch('/crop-endpoint', {
-                //     method: 'POST',
-                //     body: formData,
-                // });
-
-                // Simulate cropped image for demonstration purposes
-                const croppedImage = URL.createObjectURL(document.getElementById('image').files[0]);
-                document.getElementById('croppedImage').src = croppedImage;
-                document.getElementById('croppedImage').style.display = 'block';
-            } catch (error) {
-                console.error('Error:', error);
-                // Handle error accordingly
-            }
-        }
-
-        async function generateCaption() {
-            const prompt = document.getElementById('captionPrompt').value;
-            try {
-                // Here, you would implement the caption generation logic with your backend endpoint
-                // const response = await fetch('/generate-caption-endpoint', {
-                //     method: 'POST',
-                //     headers: { 'Content-Type': 'application/json' },
-                //     body: JSON.stringify({ prompt }),
-                // });
-
-                // Simulate generated caption for demonstration purposes
-                document.getElementById('captionResult').innerText = `Generated Caption: This is a sample caption for "${prompt}".`;
-            } catch (error) {
-                console.error('Error:', error);
-                // Handle error accordingly
-            }
-        }
-
-        function showPreview() {
-            const musicResult = document.getElementById('musicResult').innerText;
-            const croppedImage = document.getElementById('croppedImage').src;
-            const captionResult = document.getElementById('captionResult').innerText;
-
-            document.getElementById('previewMusic').style.display = musicResult ? 'block' : 'none';
-            document.getElementById('previewCaption').innerText = captionResult || 'No caption generated.';
-
-            // Assuming you have logic to set the source of the audio element with the song URL
-            // document.getElementById('previewMusic').src = 'path_to_your_song'; // Set the actual song URL here
-
-            document.getElementById('previewImage').src = croppedImage || '';
-            document.getElementById('previewImage').style.display = croppedImage ? 'block' : 'none';
-        }
-
-        // Function to switch tabs
-        function openTab(evt, tabName) {
-            const tabContents = document.getElementsByClassName('tab-content');
-            for (let i = 0; i < tabContents.length; i++) {
-                tabContents[i].style.display = 'none';
-            }
-            const tabButtons = document.getElementsByClassName('tab-button');
-            for (let i = 0; i < tabButtons.length; i++) {
-                tabButtons[i].classList.remove('active');
-            }
-            document.getElementById(tabName).style.display = 'block';
-            evt.currentTarget.classList.add('active');
-        }
-
-        // Open the default tab on page load
-        document.addEventListener('DOMContentLoaded', () => {
-            openTab(event, 'Music'); // Open the Music tab by default
-        });
-    </script>
-</body>
-</html>
+    
+                // Function to display recommendations
+                function displayRecommendations(data) {
+                    try {
+                        const recommendationsDiv = document.getElementById('recommendations');
+                        const recommendationsList = document.getElementById('recommendationsList');
+                        
+                        if (!recommendationsDiv || !recommendationsList) {
+                            console.error('Recommendations containers not found!');
+                            return;
+                        }
+                        
+                        recommendationsList.innerHTML = '';
+                        
+                        if (!data.recommendations || !Array.isArray(data.recommendations)) {
+                            console.error('Invalid recommendations data:', data);
+                            return;
+                        }
+                        
+                        data.recommendations.forEach(track => {
+                            if (!track) {
+                                console.error('Invalid track data');
+                                return;
+                            }
+                            
+                            const trackElement = document.createElement('div');
+                            trackElement.className = 'list-group-item';
+                            trackElement.innerHTML = `
+                                <div class="d-flex align-items-center">
+                                    ${track.album_image ? 
+                                        `<img src="${track.album_image}" alt="Album cover" style="width: 50px; height: 50px; margin-right: 15px;">` 
+                                        : '<div style="width: 50px; height: 50px; margin-right: 15px; background-color: #eee;"></div>'}
+                                    <div>
+                                        <h5 class="mb-1">${track.song_name || 'Unknown Song'}</h5>
+                                        <p class="mb-1">${track.artist || 'Unknown Artist'}</p>
+                                        ${track.song_url ? 
+                                            `<a href="${track.song_url}" target="_blank" class="btn btn-sm btn-outline-primary">Listen on Spotify</a>`
+                                            : ''}
+                                        ${track.preview_url ? 
+                                            `<audio controls class="mt-2">
+                                                <source src="${track.preview_url}" type="audio/mpeg">
+                                            </audio>` 
+                                            : ''}
+                                    </div>
+                                </div>
+                            `;
+                            recommendationsList.appendChild(trackElement);
+                        });
+                        
+                        recommendationsDiv.style.display = 'block';
+                    } catch (error) {
+                        console.error('Error displaying recommendations:', error);
+                        alert('Error displaying recommendations: ' + error.message);
+                    }
+                }
+    
+                // Handle chat form submission
+                chatForm.addEventListener('submit', async function(e) {
+                    e.preventDefault();
+                    
+                    const formData = new FormData(this);
+                    console.log('Sending message:', formData.get('message'));
+                    
+                    try {
+                        const response = await fetch('/chat', {
+                            method: 'POST',
+                            body: formData
+                        });
+                        
+                        console.log('Chat response status:', response.status);
+                        const data = await response.json();
+                        console.log('Chat response data:', data);
+                        
+                        if (response.ok) {
+                            // Update chat messages
+                            const chatMessages = document.getElementById('chatMessages');
+                            const userMessage = document.createElement('div');
+                            userMessage.className = 'message user-message';
+                            userMessage.textContent = formData.get('message');
+                            chatMessages.appendChild(userMessage);
+    
+                            const responseMessage = document.createElement('div');
+                            responseMessage.className = 'message response-message';
+                            responseMessage.textContent = data.response; // Assuming the response is in the format { response: "..." }
+                            chatMessages.appendChild(responseMessage);
+    
+                            // Scroll to the bottom of the chat messages
+                            chatMessages.scrollTop = chatMessages.scrollHeight;
+    
+                            // Clear the input field
+                            chatForm.reset();
+                        } else {
+                            console.error('Error response:', data);
+                            alert(data.detail || 'Error sending message');
+                        }
+                    } catch (error) {
+                        console.error('Fetch error:', error);
+                        alert('Error sending message: ' + error.message);
+                    }
+                });
+            });
+        </script>
+    </body>
+    </html>
