@@ -1,0 +1,165 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>InstaSound AI Dashboard</title>
+    <link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+    <div class="dashboard-container">
+        <h2>Welcome, {{ user }}! Explore InstaSound AI Features</h2>
+
+        <!-- Tab Navigation -->
+        <div class="tab">
+            <button class="tab-button" onclick="openTab(event, 'Music')">Music Recommendation</button>
+            <button class="tab-button" onclick="openTab(event, 'Crop')">AI Image Cropping</button>
+            <button class="tab-button" onclick="openTab(event, 'Caption')">Caption Generator</button>
+            <button class="tab-button" onclick="openTab(event, 'Preview')">Real-Time Preview</button>
+        </div>
+
+        <!-- Tab Content -->
+
+        <!-- Music Recommendation -->
+        <div id="Music" class="tab-content">
+            <h3>Music Recommendation</h3>
+            <form id="musicForm" enctype="multipart/form-data">
+                <label for="musicImage">Upload an Image:</label>
+                <input type="file" id="musicImage" name="musicImage" accept="image/*" required>
+                <button type="button" onclick="recommendMusic()">Get Music</button>
+            </form>
+            <p id="musicResult">Recommended song will appear here.</p>
+        </div>
+
+        <!-- AI Image Cropping -->
+        <div id="Crop" class="tab-content">
+            <h3>AI Image Cropping</h3>
+            <form id="cropForm" enctype="multipart/form-data">
+                <label for="image">Upload Image:</label>
+                <input type="file" id="image" name="image" accept="image/*" required>
+                <button type="button" onclick="cropImage()">Crop Image</button>
+            </form>
+            <img id="croppedImage" src="#" alt="Cropped Image Preview" style="display:none;">
+        </div>
+
+        <!-- Caption Generator -->
+        <div id="Caption" class="tab-content">
+            <h3>Caption Generator</h3>
+            <form id="captionForm">
+                <label for="captionPrompt">Enter Caption Prompt:</label>
+                <input type="text" id="captionPrompt" name="captionPrompt" required>
+                <button type="button" onclick="generateCaption()">Generate Caption</button>
+            </form>
+            <p id="captionResult">Generated caption will appear here.</p>
+        </div>
+
+        <!-- Real-Time Preview -->
+        <div id="Preview" class="tab-content">
+            <h3>Real-Time Preview</h3>
+            <p>Combine the generated music, cropped image, and caption to preview your story.</p>
+            <div id="storyPreview">
+                <audio id="previewMusic" controls style="display:none;"></audio>
+                <img id="previewImage" src="#" alt="Image Preview" style="display:none;">
+                <p id="previewCaption"></p>
+            </div>
+            <button onclick="showPreview()">Show Preview</button>
+        </div>
+
+        <a href="/logout" class="logout-button">Logout</a>
+    </div>
+
+    <script>
+        async function recommendMusic() {
+            const formData = new FormData(document.getElementById('musicForm'));
+            try {
+                const response = await fetch('/recommend-music', {
+                    method: 'POST',
+                    body: formData,
+                });
+
+                if (!response.ok) throw new Error('Failed to fetch music recommendation');
+
+                const data = await response.json();
+                document.getElementById('musicResult').innerHTML = `
+                    Recommended Song: ${data.song} 
+                    <br><img src="${data.image_url}" alt="Uploaded Image" style="max-width: 300px;"/>
+                `;
+            } catch (error) {
+                console.error('Error:', error);
+                document.getElementById('musicResult').innerText = `Error: ${error.message}`;
+            }
+        }
+
+        async function cropImage() {
+            const formData = new FormData(document.getElementById('cropForm'));
+            try {
+                // Here, you would implement the cropping logic with your backend endpoint
+                // const response = await fetch('/crop-endpoint', {
+                //     method: 'POST',
+                //     body: formData,
+                // });
+
+                // Simulate cropped image for demonstration purposes
+                const croppedImage = URL.createObjectURL(document.getElementById('image').files[0]);
+                document.getElementById('croppedImage').src = croppedImage;
+                document.getElementById('croppedImage').style.display = 'block';
+            } catch (error) {
+                console.error('Error:', error);
+                // Handle error accordingly
+            }
+        }
+
+        async function generateCaption() {
+            const prompt = document.getElementById('captionPrompt').value;
+            try {
+                // Here, you would implement the caption generation logic with your backend endpoint
+                // const response = await fetch('/generate-caption-endpoint', {
+                //     method: 'POST',
+                //     headers: { 'Content-Type': 'application/json' },
+                //     body: JSON.stringify({ prompt }),
+                // });
+
+                // Simulate generated caption for demonstration purposes
+                document.getElementById('captionResult').innerText = `Generated Caption: This is a sample caption for "${prompt}".`;
+            } catch (error) {
+                console.error('Error:', error);
+                // Handle error accordingly
+            }
+        }
+
+        function showPreview() {
+            const musicResult = document.getElementById('musicResult').innerText;
+            const croppedImage = document.getElementById('croppedImage').src;
+            const captionResult = document.getElementById('captionResult').innerText;
+
+            document.getElementById('previewMusic').style.display = musicResult ? 'block' : 'none';
+            document.getElementById('previewCaption').innerText = captionResult || 'No caption generated.';
+
+            // Assuming you have logic to set the source of the audio element with the song URL
+            // document.getElementById('previewMusic').src = 'path_to_your_song'; // Set the actual song URL here
+
+            document.getElementById('previewImage').src = croppedImage || '';
+            document.getElementById('previewImage').style.display = croppedImage ? 'block' : 'none';
+        }
+
+        // Function to switch tabs
+        function openTab(evt, tabName) {
+            const tabContents = document.getElementsByClassName('tab-content');
+            for (let i = 0; i < tabContents.length; i++) {
+                tabContents[i].style.display = 'none';
+            }
+            const tabButtons = document.getElementsByClassName('tab-button');
+            for (let i = 0; i < tabButtons.length; i++) {
+                tabButtons[i].classList.remove('active');
+            }
+            document.getElementById(tabName).style.display = 'block';
+            evt.currentTarget.classList.add('active');
+        }
+
+        // Open the default tab on page load
+        document.addEventListener('DOMContentLoaded', () => {
+            openTab(event, 'Music'); // Open the Music tab by default
+        });
+    </script>
+</body>
+</html>

@@ -1,0 +1,30 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Sign In</title>
+  <link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+
+<div class="form-signin">
+  <form action="/login" method="post">
+    <h2 class="form-signin-heading">Please sign in</h2>
+    
+    <div class="form-floating">
+      <input type="email" id="email" name="email" class="form-control" placeholder="Email address" required autofocus>
+      <label for="email">Email address</label>
+    </div>
+
+    <div class="form-floating">
+      <input type="password" id="password" name="password" class="form-control" placeholder="Password" required>
+      <label for="password">Password</label>
+    </div>
+
+    <button class="w-100 btn btn-lg btn-primary" type="submit">Sign in</button>
+  </form>
+</div>
+
+</body>
+</html>

@@ -1,0 +1,6 @@
+fastapi
+uvicorn
+torch
+Pillow
+clip-by-openai  # Ensure to specify the correct package if using CLIP
+starlette
